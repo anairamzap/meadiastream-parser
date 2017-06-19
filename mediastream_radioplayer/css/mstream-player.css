@@ -1,0 +1,34 @@
+/* Sample css file to give initial styling to Mediastream Player block */
+.autorefresh, #block-mediastream-radioplayer-streaming-data {
+    display: block;
+}
+
+#block-mediastream-radioplayer-streaming-data {
+    width: 15%;
+}
+
+#block-mediastream-radioplayer-streaming-data img {
+  max-width:100%;
+}
+
+#block-mediastream-radioplayer-streaming-data .artist {
+  display:inline-block;
+  font-weight:700;
+}
+#block-mediastream-radioplayer-streaming-data .artist:before {
+  content:"\f0c0";
+  font-weight:normal;
+  font-family:"FontAwesome";
+}
+
+#block-mediastream-radioplayer-streaming-data .song {
+  display:inline-block;
+}
+#block-mediastream-radioplayer-streaming-data .song:before {
+  content:"\f001";
+  font-family:"FontAwesome";
+}
+
+#block-mediastream-radioplayer-streaming-data .programa {
+  display:inline-block;
+}

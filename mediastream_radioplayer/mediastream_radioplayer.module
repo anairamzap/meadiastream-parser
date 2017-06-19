@@ -1,27 +1,35 @@
 <?php
+
 /**
  * @file
  * Mediastream Radio Player module.
+ * @link http://mediastre.am Mediastream @enlink streaming services
+ * integration into Drupal sites.
+ *
+ * Simple module that integrates mediastream API and facilitate devs to add
+ * the streaming information into Drupal Blocks.
  */
 
 /**
  * Implements hook_menu().
- * Provides an update function menu callback and a config page to set default img and API url
+ *
+ * Provides an update function menu callback and a config page to set
+ * default image and API consumption url.
  */
 function mediastream_radioplayer_menu() {
+
   $items = array();
   $items['mediastream_radioplayer/update'] = array(
     'title' => 'Autorefresh streaming block',
     'page callback' => 'mediastream_radioplayer_update',
-    'access callback' => TRUE,
+    'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
   );
 
-  $items['admin/mediastream_radioplayer/settings'] = array(
-    'title' => 'Mediastream Radioplayer Settings',
+  $items['admin/config/mediastream_radioplayer/settings'] = array(
+    'title' => 'Mediastream Radioplayer',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('mediastream_radioplayer_configure'),
-//     'access callback' => 'user_access',
     'access arguments' => array('administer mediastream_radioplayer settings'),
     'description' => 'Configure settings.',
     // All admin form callbacks in .admin.inc.
@@ -30,10 +38,12 @@ function mediastream_radioplayer_menu() {
   );
   return $items;
 }
+
 /**
  * Implements hook_permission().
  */
 function mediastream_radioplayer_permission() {
+
   return array(
     'administer mediastream_radioplayer settings' => array(
       'title' => t('Configure Mediastream Radioplayer settings'),
@@ -44,25 +54,28 @@ function mediastream_radioplayer_permission() {
 }
 
 /**
- * Use this function to get the updated data for display - autorefresh fcn
+ * Gets the updated data for display - autorefresh fcn.
+ * @todo: create new function that returns the rendered array *both* to the block and the ajax callback
  */
 function mediastream_radioplayer_update($module = NULL, $delta = NULL) {
-    $module = 'mediastream_radioplayer';
-    $delta = 'streaming_data';
-    //Getting data from block
-    $block  = block_load($module, $delta);
-    $renderable_array = _block_get_renderable_array(_block_render_blocks(array($block)));
-    $output = drupal_render($renderable_array);
-    //print into encoded array - this will be decoded in the js
-    print drupal_json_encode(array('html' => $output));
-    // The exit() call is absolutely required!
-    exit();
+
+  $module = 'mediastream_radioplayer';
+  $delta = 'streaming_data';
+  // Getting data from block.
+  $block = block_load($module, $delta);
+  $renderable_array = _block_get_renderable_array(_block_render_blocks(array($block)));
+  $output = drupal_render($renderable_array);
+  // Print into encoded array - this will be decoded in the js.
+  print drupal_json_encode(array('html' => $output));
+  // The exit() call is absolutely required!
+  exit();
 }
 
 /**
  * Implements hook_block_info().
  */
 function mediastream_radioplayer_block_info() {
+
   $blocks['streaming_data'] = array(
     'info' => t('Mediastream Radioplayer - Preview'),
     'cache' => DRUPAL_NO_CACHE,
@@ -72,53 +85,60 @@ function mediastream_radioplayer_block_info() {
 
 /**
  * Implements hook_block_view().
+ * @todo: remove php imagecreate. If no img from stream or module settings
+ * thumb_url should be empty. imagecreate is not being validated!
+ * if no gd lib fatal error will occur :S
+ *
+ * @return: array Renderable array for block content.
  */
-function mediastream_radioplayer_block_view($delta='') {
+function mediastream_radioplayer_block_view($delta = '') {
+
   $block = array();
-  // these vars came from the decode we did of the json object
-  $decoded = json_to_block();
+  // These vars came from the decode we did of the json object.
+  $decoded = mediastream_radioplayer_json_to_block();
   $artist = $decoded['artist_name'];
   $song = $decoded['artist_song'];
   $programa = $decoded['programa'];
   $stream_img = $decoded['photo'];
 
-  if (!empty($stream_img)) { //streaming data has an image, so we use it
+  // Streaming data has an image, so we use it.
+  if (!empty($stream_img)) {
     $thumb_url = $stream_img;
   }
-  elseif (empty($stream_img) && variable_get('mediastream_radioplayer_thumb', TRUE) ) { //no image in streaming data, so we use the one set in config page
+  // No image in streaming data, so we use the one set in config page.
+  elseif (empty($stream_img) && variable_get('mediastream_radioplayer_thumb', TRUE)) {
     $thumb = file_load(variable_get('mediastream_radioplayer_thumb'));
     $thumb_url = file_create_url($thumb->uri);
   }
-  else { //in worst case we just create an awful image with php :S
+  // In worst case we just create an awful image with php :S
+  else {
     $modulepath = drupal_get_path('module', 'mediastream_radioplayer');
     $image = imagecreatetruecolor(100, 100);
     $color_texto = imagecolorallocate($image, 233, 14, 91);
-    imagestring($image, 5, 25, 20,  'no hay', $color_texto);
-    imagestring($image, 5, 25, 40, 'imagen', $color_texto);
-    imagestring($image, 5, 40, 60,  ':(', $color_texto);
-    $imgurl =  $modulepath . '/vaciototal.jpg';
+    imagestring($image, 5, 25, 20, 'we have', $color_texto);
+    imagestring($image, 5, 25, 40, 'no img', $color_texto);
+    imagestring($image, 5, 40, 60, ':(', $color_texto);
+    $imgurl = $modulepath . '/vaciototal.jpg';
     imagejpeg($image, $imgurl);
-    // freeing memory
+    // Freeing memory.
     imagedestroy($image);
     $thumb_url = file_create_url($imgurl);
   }
 
   switch ($delta) {
-    case 'streaming_data' :
+    case 'streaming_data':
       $basepath = drupal_get_path('module', 'mediastream_radioplayer');
-      $block['content'] = array
-        (
-          '#attached' => array
-          (  //'css' => array($basepath . '/css/mediastream_radioplayer.css'),
+      $block['content'] = array(
+        '#attached' => array(
           'js'  => array($basepath . '/js/autorefresh.js'),
-          ),
-          '#theme' => 'mediastream_radioplayer',
-          '#thumb' => $thumb_url,
-          '#programa' => check_plain($programa),
-          '#artist' => check_plain($artist),
-          '#song' => check_plain($song),
-       );
-    break;
+        ),
+        '#theme' => 'mediastream_radioplayer',
+        '#thumb' => $thumb_url,
+        '#programa' => check_plain($programa),
+        '#artist' => check_plain($artist),
+        '#song' => check_plain($song),
+      );
+      break;
   }
   return $block;
 }
@@ -127,9 +147,10 @@ function mediastream_radioplayer_block_view($delta='') {
  * Implements hook_theme().
  */
 function mediastream_radioplayer_theme() {
+
   return array(
     'mediastream_radioplayer' => array(
-      // Specifying variables used in the template
+      // Specifying variables used in the template.
       'variables' => array(
         // NULL is ok. Values set here are stored in Theme Registry.
         'thumb' => NULL,
@@ -143,50 +164,61 @@ function mediastream_radioplayer_theme() {
 }
 
 /**
- * Custom function to assemble renderable array for block content.
- * Returns a renderable array with the block content.
- * @return
- * returns a renderable array of block content.
+ * Implements hook_preprocess_hook().
+ * We offer a sample css file.
  */
-function json_to_block() {
+function mediastream_radioplayer_preprocess_mediastream_radioplayer(&$variables) {
+  drupal_add_css(drupal_get_path('module', 'mediastream_radioplayer') . '/css/mstream-player.css');
+}
+
+/**
+ * Custom function to assemble renderable array for block content.
+ * @todo: remove drupal_goto from here, create new function to handle url validation.
+ *
+ * @return array
+ *   returns a renderable array of block content.
+ */
+function mediastream_radioplayer_json_to_block() {
+
   $output = array();
   $jsonurlset = check_plain(variable_get('mediastream_radioplayer_url'));
   // @todo let the URL fixed and just grab the ID from settings page?
-
-//retreive and parse the json from URL.
-  // Check if URL was set on config page and use it
+  // Retreive and parse the json from URL.
+  // Check if URL was set on config page and use it.
   if (!empty($jsonurlset)) {
     $request = drupal_http_request($jsonurlset);
   }
-  else { 
+  else {
     global $user;
     if (in_array('administrator', array_values($user->roles))) {
-    //error message and redirect to module config page, only to admins.
+      // Error message and redirect to module config page, only to admins.
       drupal_set_message(t('Error in Mediastream Radio player module - No URL to parse. Please check if the field Mediastre API URL was correctly set, or disable the module'));
-      drupal_goto('admin/mediastream_radioplayer/settings');
+      drupal_goto('admin/config/mediastream_radioplayer/settings');
     }
   }
 
-if ($request) { //if we have an URL, parse it with drupal_json_decode
+  // If we have an URL, parse it with drupal_json_decode.
+  if ($request) {
     $request = $request->data;
+
     $decoded_json = drupal_json_decode($request);
   }
-  //get the array position needed for retrieve the 'data' element.
+  // Get the array position needed for retrieve the 'data' element.
   $data = $decoded_json['data'];
 
   if (!empty($data['artist']['name'])) {
-    //Artist Name in the json data output
+    // Artist Name in the json data output.
     $output['artist_name'] = $data['artist']['name'];
   }
   if (!empty($data['song']['title'])) {
-    //Song Name in the json data output
+    // Song Name in the json data output.
     $output['artist_song'] = $data['song']['title'];
   }
   if (!empty($data['song']['title'])) {
-    //Program Name in the json data output
+    // Program Name in the json data output.
     $output['programa'] = $data['program']['name'];
   }
-  //photos madness starts here :p
+  // Photos madness starts here :p.
   if (!empty($data['artist']['images'])) {
     $photo = $data['artist']['images'];
   }
@@ -196,7 +228,8 @@ if ($request) { //if we have an URL, parse it with drupal_json_decode
   elseif (!empty($photo['small'])) {
     $output['photo'] = $photo['small'];
   }
-  else { //we empty the variable and we will use the default image set in config page
+  // We empty the variable and we will use the default image set in config page.
+  else {
     $output['photo'] = '';
   }
 

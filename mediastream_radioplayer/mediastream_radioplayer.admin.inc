@@ -2,27 +2,33 @@
 
 /**
  * @file
- * Contains page callbacks for publishcontent
+ * Contains page callbacks for mediastream_radioplayer.
  */
 
 /**
  * Creates/returns a form to configure the module settings.
  *
  * @param array $form
+ *   A structured array containing the elements and properties of the form.
  * @param array $form_state
+ *   An array that stores information about the form's current state
+ *   during processing.
+ *
  * @return array
+ *   Form to config mediastream player module.
  */
 function mediastream_radioplayer_configure($form, &$form_state) {
   $form = array();
-  // URL with the streaming API jason
+  // URL with the streaming API jason.
   $form['mediastream_radioplayer_url'] = array(
     '#type' => 'textfield',
     '#title' => t('Mediastre API URL'),
-    '#description' => t('Paste here the API Url provided from Mediastre. Confirm with them if the API is a json object, otherwise this implementation won\'t work at all.'),
-    '#default_value' => variable_get('mediastream_radioplayer_url', ''), // meadiastream API
+    '#description' => t('Paste here the API Url provided from Mediastre. Confirm with them if the API is a json object.'),
+  // Meadiastream API.
+    '#default_value' => variable_get('mediastream_radioplayer_url', ''),
     '#required' => TRUE,
   );
-  // File selection form element
+  // File selection form element.
   $form['mediastream_radioplayer_thumb'] = array(
     '#name' => 'radioplayer_default_img',
     '#type' => 'managed_file',
@@ -39,17 +45,16 @@ function mediastream_radioplayer_configure($form, &$form_state) {
   );
 
   $form['#submit'][] = 'mediastream_radioplayer_form_submit';
-  // Use system_settings_form() to automate saving configuration variables. Esto es por un bug en system_settings_form()
+  // Use system_settings_form() to automate saving configuration variables.
   return system_settings_form($form);
-
 }
 
 /**
  * Implements validation from the Form API.
  *
- * @param $form
+ * @param array $form
  *   A structured array containing the elements and properties of the form.
- * @param $form_state
+ * @param array $form_state
  *   An array that stores information about the form's current state
  *   during processing.
  */
@@ -60,15 +65,13 @@ function mediastream_radioplayer_configure_validate($form, &$form_state) {
   }
   // Ensure URL is a valid Mediastre API url.
   $url = parse_url($form_state['values']['mediastream_radioplayer_url']);
-  if ($url['host'] != 'nowplaying.mediastre.am')  {
-      form_set_error('url', t('The URL %url is not a valid Mediastre API url. Ask your meadia stream provider for a valid API url like: http://nowplaying.mediastre.am/api/station/*ID*/nowplaying', array('%url' => $form_state['values']['mediastream_radioplayer_url'])));
+  if ($url['host'] != 'nowplaying.mediastre.am') {
+    form_set_error('url', t('The URL %url is not a valid Mediastre API url. Ask your meadia stream provider for a valid API url like: http://nowplaying.mediastre.am/api/station/*ID*/nowplaying', array('%url' => $form_state['values']['mediastream_radioplayer_url'])));
   }
-  // decode the JSON data && Ensure URL contains a valid JSON object
+  // Decode the JSON data && Ensure URL contains a valid JSON object.
   $url = $form_state['values']['mediastream_radioplayer_url'];
-  $request = drupal_http_request($url);
-  $result = drupal_json_decode($request->data);
   if (json_last_error() !== JSON_ERROR_NONE) {
-      form_set_error('url', t('The URL %url is not a valid Json Object. Ask your meadia stream provider for a valid API url holding a json object like: http://nowplaying.mediastre.am/api/station/*ID*/nowplaying. Otherwise this module is useless :(', array('%url' => $form_state['values']['mediastream_radioplayer_url'])));
+    form_set_error('url', t('The URL %url is not a valid Json Object. Ask your meadia stream provider for a valid API url holding a json object like: http://nowplaying.mediastre.am/api/station/*ID*/nowplaying. Otherwise this module is useless :(', array('%url' => $form_state['values']['mediastream_radioplayer_url'])));
   }
 
 }

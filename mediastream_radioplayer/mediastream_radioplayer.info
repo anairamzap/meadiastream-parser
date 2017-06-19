@@ -1,5 +1,5 @@
-name = Mediastream API parser
-description = "Pull in json from Mediastream API and render it as html - with autorefresh function"
+name = Mediastream Player
+description = "Pulls in json from Mediastream API, renders it as html and creates a block - has autorefresh"
 core = 7.x
 version = 7.x-1.0
-configure = admin/mediastream_radioplayer/settings
+configure = admin/config/mediastream_radioplayer/settings

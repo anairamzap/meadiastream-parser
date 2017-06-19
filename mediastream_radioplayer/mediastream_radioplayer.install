@@ -1,9 +1,11 @@
 <?php
 /**
  * @file
+ * Removes variables on uninstall.
+ */
+
+ /**
  * Implements hook_uninstall().
- *
- * Remove variables used.
  */
 function sitename_footer_uninstall() {
   variable_del('mediastream_radioplayer_url');
