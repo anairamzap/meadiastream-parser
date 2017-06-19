@@ -13,7 +13,9 @@ Nothing really fancy, just follow the common Drupal procedure to install/enable/
 
 2. Enable the module in _yoursiteurl_/admin/modules
    OR if using drush:
-   ´$ drush en mediastream_radioplayer´
+   ```
+   $ drush en mediastream_radioplayer
+   ```
 
 3. Configure the module settings in its config page _yoursiteurl_/admin/config/mediastream_radioplayer/settings
 
